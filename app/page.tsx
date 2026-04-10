@@ -27,6 +27,10 @@ export default function GamePage() {
   const scoreRef  = useRef(0);
 
   const [screen, setScreen]     = useState<Screen>('start');
+  const prevScreenRef = useRef<Screen>('start'); // запоминаем откуда открыли панель
+  const setScreenWithHistory = useCallback((s: Screen) => {
+    setScreen(prev => { prevScreenRef.current = prev; return s; });
+  }, []);
   const [score, setScore]       = useState(0);
   const [speedPct, setSpeedPct] = useState(0);
   const [countdown, setCountdown] = useState(15);
@@ -231,13 +235,13 @@ export default function GamePage() {
           {screen === 'playing' && (
             <div style={{ position:'absolute', top:14, right:14, zIndex:30, display:'flex', flexDirection:'column', gap:8 }}>
               <button className="hud-btn"
-                onClick={() => { fetchLeaderboard(); setScreen('leaderboard'); }}>
+                onClick={() => { fetchLeaderboard(); setScreenWithHistory('leaderboard'); }}>
                 <span style={{ fontSize:18 }}>🏆</span>
                 <span style={{ fontSize:12, fontWeight:600, letterSpacing:.3 }}>Board</span>
               </button>
 
               <button className="hud-btn"
-                onClick={() => { fetchCheckin(); setScreen('checkin'); }}>
+                onClick={() => { fetchCheckin(); setScreenWithHistory('checkin'); }}>
                 <span style={{ fontSize:18 }}>📅</span>
                 <span style={{ fontSize:12, fontWeight:600, letterSpacing:.3 }}>Check-in</span>
               </button>
@@ -271,7 +275,7 @@ export default function GamePage() {
                   {/* Action buttons */}
                   <div style={{ display:'flex', gap:10, marginBottom:28 }}>
                     <button
-                      onClick={() => { fetchLeaderboard(); setScreen('leaderboard'); }}
+                      onClick={() => { fetchLeaderboard(); setScreenWithHistory('leaderboard'); }}
                       style={{
                         background:'rgba(255,215,0,0.12)', border:'1.5px solid rgba(255,215,0,0.3)',
                         borderRadius:12, padding:'10px 18px', color:'#fff', cursor:'pointer',
@@ -280,7 +284,7 @@ export default function GamePage() {
                       🏆 Leaderboard
                     </button>
                     <button
-                      onClick={() => { fetchCheckin(); setScreen('checkin'); }}
+                      onClick={() => { fetchCheckin(); setScreenWithHistory('checkin'); }}
                       style={{
                         background:'rgba(0,200,100,0.12)', border:'1.5px solid rgba(0,200,100,0.3)',
                         borderRadius:12, padding:'10px 18px', color:'#fff', cursor:'pointer',
@@ -378,7 +382,7 @@ export default function GamePage() {
                       <div style={{ fontSize:11, letterSpacing:3, opacity:.4, fontFamily:'Inter,sans-serif', textTransform:'uppercase' }}>Global</div>
                       <div style={{ fontSize:32, fontFamily:'"Bebas Neue",sans-serif', letterSpacing:2, color:'#ffd86b' }}>🏆 Leaderboard</div>
                     </div>
-                    <button onClick={() => setScreen('start')} style={{
+                    <button onClick={() => setScreen(prevScreenRef.current === 'playing' ? 'playing' : 'start')} style={{
                       background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)',
                       borderRadius:10, width:36, height:36, color:'#fff', fontSize:18, cursor:'pointer',
                     }}>✕</button>
@@ -416,14 +420,14 @@ export default function GamePage() {
                     )}
                   </div>
 
-                  <button onClick={handleStart} style={{
+                  <button onClick={() => setScreen(prevScreenRef.current === 'playing' ? 'playing' : 'start')} style={{
                     background:'linear-gradient(180deg,#0052FF,#0041CC)',
                     color:'#fff', border:'none', borderRadius:14,
                     padding:'14px 18px', fontSize:15, fontWeight:700,
                     cursor:'pointer', boxShadow:'0 6px 20px rgba(0,82,255,0.3)',
                     fontFamily:'Inter,sans-serif',
                   }}>
-                    🚗 Play Now
+                    {prevScreenRef.current === 'playing' ? '▶ Resume' : '🚗 Play Now'}
                   </button>
                 </div>
               )}
@@ -444,7 +448,7 @@ export default function GamePage() {
                       <div style={{ fontSize:11, letterSpacing:3, opacity:.4, fontFamily:'Inter,sans-serif', textTransform:'uppercase' }}>Daily</div>
                       <div style={{ fontSize:32, fontFamily:'"Bebas Neue",sans-serif', letterSpacing:2 }}>📅 Check-in</div>
                     </div>
-                    <button onClick={() => setScreen('start')} style={{
+                    <button onClick={() => setScreen(prevScreenRef.current === 'playing' ? 'playing' : 'start')} style={{
                       background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)',
                       borderRadius:10, width:36, height:36, color:'#fff', fontSize:18, cursor:'pointer',
                     }}>✕</button>
@@ -505,13 +509,13 @@ export default function GamePage() {
                     </>
                   )}
 
-                  <button onClick={handleStart} style={{
+                  <button onClick={() => setScreen(prevScreenRef.current === 'playing' ? 'playing' : 'start')} style={{
                     background:'linear-gradient(180deg,#0052FF,#0041CC)',
                     color:'#fff', border:'none', borderRadius:14,
                     padding:'14px 18px', width:'100%', fontSize:15, fontWeight:700,
                     cursor:'pointer', fontFamily:'Inter,sans-serif',
                   }}>
-                    🚗 Play Now
+                    {prevScreenRef.current === 'playing' ? '▶ Resume' : '🚗 Play Now'}
                   </button>
                 </div>
               )}
