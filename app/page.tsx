@@ -135,15 +135,42 @@ export default function GamePage() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
-        @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
-        @keyframes pop   { from{transform:scale(.9) translateY(10px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
-        @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
+        @keyframes pulse  { 0%,100%{opacity:.4} 50%{opacity:1} }
+        @keyframes pop    { from{transform:scale(.9) translateY(10px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
         @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes hudGlow {
+          0%,100% { box-shadow: 0 4px 18px rgba(232,130,64,0.18), 0 0 0 1px rgba(240,180,80,0.18) inset; }
+          50%      { box-shadow: 0 4px 28px rgba(232,130,64,0.32), 0 0 0 1px rgba(240,180,80,0.30) inset; }
+        }
         * { box-sizing:border-box; margin:0; padding:0; }
         html,body { width:100%; height:100%; overflow:hidden; background:#0d1117; }
         button { font-family:'Inter',sans-serif; }
         button:disabled { opacity:.5; cursor:wait; }
         button:active { transform:scale(.97); }
+        .hud-frame {
+          background: rgba(6,6,18,0.75);
+          border: 1px solid rgba(240,170,70,0.28);
+          border-radius: 14px;
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          animation: hudGlow 3s ease-in-out infinite;
+        }
+        .hud-btn {
+          background: rgba(6,6,18,0.75);
+          border: 1px solid rgba(240,170,70,0.28);
+          border-radius: 12px;
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          color: #fff;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          padding: 9px 13px;
+          animation: hudGlow 3s ease-in-out infinite;
+          transition: opacity .15s;
+        }
+        .hud-btn:active { opacity: .7; transform: scale(.96); }
         ::-webkit-scrollbar { width:3px; }
         ::-webkit-scrollbar-track { background:rgba(255,255,255,.05); }
         ::-webkit-scrollbar-thumb { background:rgba(255,255,255,.2); border-radius:2px; }
@@ -155,15 +182,11 @@ export default function GamePage() {
 
           {/* ── TOP-LEFT STATS FRAME ── */}
           {screen === 'playing' && (
-            <div style={{
+            <div className="hud-frame" style={{
               position:'absolute', top:14, left:14, zIndex:30,
-              background:'rgba(8,8,20,0.72)',
-              border:'1.5px solid rgba(0,82,255,0.4)',
-              borderRadius:14, padding:'10px 14px',
-              backdropFilter:'blur(12px)',
+              padding:'10px 14px',
               display:'flex', flexDirection:'column', gap:6,
               minWidth:130,
-              boxShadow:'0 4px 24px rgba(0,82,255,0.15)',
             }}>
               {/* Score */}
               <div style={{ display:'flex', alignItems:'center', gap:7 }}>
@@ -207,30 +230,16 @@ export default function GamePage() {
           {/* ── RIGHT SIDE BUTTONS ── */}
           {screen === 'playing' && (
             <div style={{ position:'absolute', top:14, right:14, zIndex:30, display:'flex', flexDirection:'column', gap:8 }}>
-              <button
-                onClick={() => { fetchLeaderboard(); setScreen('leaderboard'); }}
-                style={{
-                  background:'rgba(8,8,20,0.72)', border:'1.5px solid rgba(255,215,0,0.35)',
-                  borderRadius:12, padding:'8px 12px', color:'#fff', cursor:'pointer',
-                  backdropFilter:'blur(12px)', display:'flex', alignItems:'center', gap:7,
-                  boxShadow:'0 4px 16px rgba(255,215,0,0.1)',
-                  transition:'all .15s',
-                }}>
+              <button className="hud-btn"
+                onClick={() => { fetchLeaderboard(); setScreen('leaderboard'); }}>
                 <span style={{ fontSize:18 }}>🏆</span>
-                <span style={{ fontSize:12, fontWeight:600, fontFamily:'Inter,sans-serif', letterSpacing:.3 }}>Board</span>
+                <span style={{ fontSize:12, fontWeight:600, letterSpacing:.3 }}>Board</span>
               </button>
 
-              <button
-                onClick={() => { fetchCheckin(); setScreen('checkin'); }}
-                style={{
-                  background:'rgba(8,8,20,0.72)', border:'1.5px solid rgba(0,200,100,0.35)',
-                  borderRadius:12, padding:'8px 12px', color:'#fff', cursor:'pointer',
-                  backdropFilter:'blur(12px)', display:'flex', alignItems:'center', gap:7,
-                  boxShadow:'0 4px 16px rgba(0,200,100,0.08)',
-                  transition:'all .15s',
-                }}>
+              <button className="hud-btn"
+                onClick={() => { fetchCheckin(); setScreen('checkin'); }}>
                 <span style={{ fontSize:18 }}>📅</span>
-                <span style={{ fontSize:12, fontWeight:600, fontFamily:'Inter,sans-serif', letterSpacing:.3 }}>Check-in</span>
+                <span style={{ fontSize:12, fontWeight:600, letterSpacing:.3 }}>Check-in</span>
               </button>
             </div>
           )}
