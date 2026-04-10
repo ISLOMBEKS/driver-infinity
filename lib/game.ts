@@ -589,6 +589,7 @@ export function initGame(canvas: HTMLCanvasElement, callbacks: GameCallbacks): G
       if (Math.abs(rollAngle) > 1.35) {
         gameState = 'falling';
         fallTimer = 0;
+        stopMusic(); // плавно останавливаем музыку при съезде с дороги
         callbacks.onStateChange('falling');
       }
 
@@ -604,6 +605,7 @@ export function initGame(canvas: HTMLCanvasElement, callbacks: GameCallbacks): G
         if (o.userData.landed) {
           if (Math.abs(car.position.x - o.position.x) < 1.65 && Math.abs(car.position.z - o.position.z) < 2.6) {
             gameState = 'gameover';
+            stopMusic(); // останавливаем музыку при столкновении
             callbacks.onGameOver(Math.floor(distance));
             callbacks.onStateChange('gameover');
           }
@@ -628,6 +630,7 @@ export function initGame(canvas: HTMLCanvasElement, callbacks: GameCallbacks): G
       wheels.forEach(w => w.rotation.x += carSpeed * dt * 0.7);
       if (fallTimer >= 2.0) {
         gameState = 'gameover';
+        stopMusic(true);
         callbacks.onGameOver(Math.floor(distance));
         callbacks.onStateChange('gameover');
       }
@@ -683,22 +686,34 @@ export function initGame(canvas: HTMLCanvasElement, callbacks: GameCallbacks): G
   }
 
   function resume() {
-    if (gameState !== 'gameover') return;
+    // Разрешаем resume из gameover И falling (на случай если оплата пришла до конца анимации)
+    if (gameState !== 'gameover' && gameState !== 'falling') return;
+    stopMusic(true);
+
     gameState = 'playing';
     fallTimer = 0;
     rollAngle = 0;
     carVelX   = 0;
+    inputX    = 0;
+    touchDown = false;
+
+    // Сбрасываем машину на центр дороги
     car.rotation.set(0, 0, 0);
+    car.scale.set(1, 1, 1);
     car.position.y = 0.18;
     car.position.x = Math.max(-CAR_HALF_W, Math.min(CAR_HALF_W, car.position.x));
-    // Clear nearby obstacles
+
+    // Убираем все препятствия рядом с машиной
     for (let i = obstacles.length - 1; i >= 0; i--) {
-      if (Math.abs(car.position.z - obstacles[i].position.z) < 10) {
+      if (Math.abs(car.position.z - obstacles[i].position.z) < 15) {
         scene.remove(obstacles[i]); obstacles.splice(i, 1);
       }
     }
+
+    skidL.clear(); skidR.clear();
     callbacks.onStateChange('playing');
-    stopMusic(true);
+
+    // Запускаем музыку заново
     initAudio();
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
     startMusic();

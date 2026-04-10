@@ -70,7 +70,16 @@ export default function GamePage() {
     setCountdown(15);
     if (countdownRef.current) clearInterval(countdownRef.current);
     countdownRef.current = setInterval(() => {
-      setCountdown(prev => { if (prev <= 1) { clearInterval(countdownRef.current!); setScreen('start'); return 0; } return prev - 1; });
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownRef.current!);
+          postScore(scoreRef.current);
+          gameRef.current?.start(); // таймер истёк → новая игра автоматически
+          setScreen('playing');
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
   }
   useEffect(() => () => { if (countdownRef.current) clearInterval(countdownRef.current); }, []);
@@ -90,7 +99,10 @@ export default function GamePage() {
 
   const handleContinueNo = useCallback(() => {
     if (countdownRef.current) clearInterval(countdownRef.current);
-    postScore(scoreRef.current); setScreen('start');
+    postScore(scoreRef.current);
+    // Сразу запускаем новую игру — не идём на стартовый экран
+    gameRef.current?.start();
+    setScreen('playing');
   }, []);
 
   const fetchLeaderboard = useCallback(async () => {
