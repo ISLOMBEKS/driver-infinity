@@ -1,0 +1,10 @@
+Replace these files with real images:
+
+- icon.png    — 1024×1024 app icon (blue background with "DI" or car)
+- splash.png  — 200×200 splash screen image
+- hero.png    — 1200×630 hero/OG image
+
+You can generate them at:
+  https://www.canva.com
+  https://ideogram.ai
+  https://recraft.ai
