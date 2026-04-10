@@ -86,66 +86,69 @@ function makeStripeTexture() {
   return tex;
 }
 
-// ── LICENSE PLATE TEXTURE ─────────────────────────────────────────────────────
+// ── LICENSE PLATE TEXTURE — Base logo style ───────────────────────────────────
 function makeLicensePlateTexture() {
-  const W = 512, H = 140;
+  const W = 512, H = 192;
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const ctx = c.getContext('2d')!;
 
-  // Plate background — жёлтый с синей рамкой (европейский стиль)
-  const r = 14;
-  ctx.fillStyle = '#F5E642';
+  // Фон — Base синий
+  const r = 18;
+  ctx.fillStyle = '#0000FF';
   ctx.beginPath();
-  ctx.moveTo(r, 0); ctx.lineTo(W - r, 0);
-  ctx.quadraticCurveTo(W, 0, W, r);
-  ctx.lineTo(W, H - r); ctx.quadraticCurveTo(W, H, W - r, H);
-  ctx.lineTo(r, H); ctx.quadraticCurveTo(0, H, 0, H - r);
-  ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.moveTo(r, 0); ctx.lineTo(W-r, 0);
+  ctx.arcTo(W, 0, W, r, r);
+  ctx.lineTo(W, H-r);
+  ctx.arcTo(W, H, W-r, H, r);
+  ctx.lineTo(r, H);
+  ctx.arcTo(0, H, 0, H-r, r);
+  ctx.lineTo(0, r);
+  ctx.arcTo(0, 0, r, 0, r);
   ctx.closePath(); ctx.fill();
 
-  // Синяя полоса слева (EU стиль)
-  ctx.fillStyle = '#0052FF';
-  ctx.beginPath();
-  ctx.moveTo(r, 0); ctx.lineTo(62, 0); ctx.lineTo(62, H); ctx.lineTo(r, H);
-  ctx.quadraticCurveTo(0, H, 0, H - r);
-  ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
-  ctx.closePath(); ctx.fill();
+  // Рисуем логотип "base" как в оригинале:
+  // 4 белых скруглённых прямоугольника с вырезами — b, a, s, e
+  ctx.fillStyle = '#FFFFFF';
 
-  // Звёзды ЕС (упрощённо — маленькие точки)
-  ctx.fillStyle = '#FFD700';
-  const starCx = 31, starCy = H / 2;
-  for (let i = 0; i < 6; i++) {
-    const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
-    const sx = starCx + Math.cos(angle) * 22;
-    const sy = starCy + Math.sin(angle) * 22;
-    ctx.beginPath(); ctx.arc(sx, sy, 4, 0, Math.PI * 2); ctx.fill();
+  const pad   = 42;        // отступ от краёв
+  const gap   = 18;        // зазор между буквами
+  const total = W - pad*2;
+  const lw    = (total - gap*3) / 4; // ширина одной буквы
+  const lh    = H - pad*2;           // высота
+  const lr    = 14;                   // скругление буквы
+
+  function roundRect(x: number, y: number, w: number, h: number, rr: number) {
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.lineTo(x+w-rr, y); ctx.arcTo(x+w, y, x+w, y+rr, rr);
+    ctx.lineTo(x+w, y+h-rr); ctx.arcTo(x+w, y+h, x+w-rr, y+h, rr);
+    ctx.lineTo(x+rr, y+h); ctx.arcTo(x, y+h, x, y+h-rr, rr);
+    ctx.lineTo(x, y+rr); ctx.arcTo(x, y, x+rr, y, rr);
+    ctx.closePath(); ctx.fill();
   }
 
-  // "B" буква под звёздами
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 28px Arial';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText('B', starCx, H - 8);
-
-  // Рамка вокруг всей таблички
-  ctx.strokeStyle = '#888';
-  ctx.lineWidth = 5;
+  // b — прямоугольник с вырезом сверху-слева (как в логотипе Base)
+  const x0 = pad;
+  const notchW = lw * 0.42, notchH = lh * 0.42;
+  ctx.save();
   ctx.beginPath();
-  ctx.moveTo(r, 0); ctx.lineTo(W - r, 0);
-  ctx.quadraticCurveTo(W, 0, W, r);
-  ctx.lineTo(W, H - r); ctx.quadraticCurveTo(W, H, W - r, H);
-  ctx.lineTo(r, H); ctx.quadraticCurveTo(0, H, 0, H - r);
-  ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
-  ctx.closePath(); ctx.stroke();
+  // Внешний контур b
+  ctx.moveTo(x0 + lr, pad);
+  ctx.lineTo(x0 + lw - lr, pad); ctx.arcTo(x0+lw, pad, x0+lw, pad+lr, lr);
+  ctx.lineTo(x0+lw, pad+lh-lr); ctx.arcTo(x0+lw, pad+lh, x0+lw-lr, pad+lh, lr);
+  ctx.lineTo(x0+lr, pad+lh); ctx.arcTo(x0, pad+lh, x0, pad+lh-lr, lr);
+  ctx.lineTo(x0, pad+notchH+lr); ctx.arcTo(x0, pad+notchH, x0+lr, pad+notchH, lr);
+  ctx.lineTo(x0+notchW-lr, pad+notchH); ctx.arcTo(x0+notchW, pad+notchH, x0+notchW, pad+notchH-lr, lr);
+  ctx.lineTo(x0+notchW, pad+lr); ctx.arcTo(x0+notchW, pad, x0+notchW+lr, pad, lr);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
 
-  // Текст номера
-  ctx.fillStyle = '#111';
-  ctx.font = 'bold 72px "Arial Narrow", Arial';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('BASE·001', W / 2 + 30, H / 2);
+  // a, s, e — простые скруглённые прямоугольники
+  for (let i = 1; i <= 3; i++) {
+    const xi = pad + i*(lw+gap);
+    roundRect(xi, pad, lw, lh, lr);
+  }
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -302,7 +305,7 @@ export function initGame(canvas: HTMLCanvasElement, callbacks: GameCallbacks): G
   // ── License plate on rear bumper ──────────────────────────────────────────────
   const plateTex = makeLicensePlateTexture();
   const plateMat = new THREE.MeshBasicMaterial({ map: plateTex });
-  const plateMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.22), plateMat);
+  const plateMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.42), plateMat);
   plateMesh.position.set(0, 0.42, -2.04); // задний бампер, смотрит назад
   car.add(plateMesh);
 
