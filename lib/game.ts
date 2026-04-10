@@ -86,25 +86,66 @@ function makeStripeTexture() {
   return tex;
 }
 
-// ── BASE LOGO TEXTURE ─────────────────────────────────────────────────────────
-function makeBaseLogoTexture() {
-  const S = 256;
+// ── LICENSE PLATE TEXTURE ─────────────────────────────────────────────────────
+function makeLicensePlateTexture() {
+  const W = 512, H = 140;
   const c = document.createElement('canvas');
-  c.width = S; c.height = S;
+  c.width = W; c.height = H;
   const ctx = c.getContext('2d')!;
 
-  // Blue circle background
+  // Plate background — жёлтый с синей рамкой (европейский стиль)
+  const r = 14;
+  ctx.fillStyle = '#F5E642';
+  ctx.beginPath();
+  ctx.moveTo(r, 0); ctx.lineTo(W - r, 0);
+  ctx.quadraticCurveTo(W, 0, W, r);
+  ctx.lineTo(W, H - r); ctx.quadraticCurveTo(W, H, W - r, H);
+  ctx.lineTo(r, H); ctx.quadraticCurveTo(0, H, 0, H - r);
+  ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath(); ctx.fill();
+
+  // Синяя полоса слева (EU стиль)
   ctx.fillStyle = '#0052FF';
   ctx.beginPath();
-  ctx.arc(S / 2, S / 2, S / 2, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.moveTo(r, 0); ctx.lineTo(62, 0); ctx.lineTo(62, H); ctx.lineTo(r, H);
+  ctx.quadraticCurveTo(0, H, 0, H - r);
+  ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath(); ctx.fill();
 
-  // White "B" letter (Base logo style)
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = `bold ${Math.round(S * 0.62)}px Arial`;
+  // Звёзды ЕС (упрощённо — маленькие точки)
+  ctx.fillStyle = '#FFD700';
+  const starCx = 31, starCy = H / 2;
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
+    const sx = starCx + Math.cos(angle) * 22;
+    const sy = starCy + Math.sin(angle) * 22;
+    ctx.beginPath(); ctx.arc(sx, sy, 4, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // "B" буква под звёздами
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 28px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('B', starCx, H - 8);
+
+  // Рамка вокруг всей таблички
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(r, 0); ctx.lineTo(W - r, 0);
+  ctx.quadraticCurveTo(W, 0, W, r);
+  ctx.lineTo(W, H - r); ctx.quadraticCurveTo(W, H, W - r, H);
+  ctx.lineTo(r, H); ctx.quadraticCurveTo(0, H, 0, H - r);
+  ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath(); ctx.stroke();
+
+  // Текст номера
+  ctx.fillStyle = '#111';
+  ctx.font = 'bold 72px "Arial Narrow", Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('B', S / 2, S / 2 + S * 0.04);
+  ctx.fillText('BASE·001', W / 2 + 30, H / 2);
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -258,13 +299,12 @@ export function initGame(canvas: HTMLCanvasElement, callbacks: GameCallbacks): G
   addBox(car, 1.82, 0.25, 0.12, mBump,  0, 0.38, -1.97);
   for (const sx of [-0.58, 0.58]) addBox(car, 0.45, 0.16, 0.07, mTail, sx, 0.55, -1.9);
 
-  // ── Base Logo on roof ─────────────────────────────────────────────────────────
-  const logoTex = makeBaseLogoTexture();
-  const logoMat = new THREE.MeshBasicMaterial({ map: logoTex, transparent: true });
-  const logoMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), logoMat);
-  logoMesh.rotation.x = -Math.PI / 2;
-  logoMesh.position.set(0, 1.37, -0.1);
-  car.add(logoMesh);
+  // ── License plate on rear bumper ──────────────────────────────────────────────
+  const plateTex = makeLicensePlateTexture();
+  const plateMat = new THREE.MeshBasicMaterial({ map: plateTex });
+  const plateMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.22), plateMat);
+  plateMesh.position.set(0, 0.42, -2.04); // задний бампер, смотрит назад
+  car.add(plateMesh);
 
   // ── Wheels ───────────────────────────────────────────────────────────────────
   const gWRim = new THREE.CylinderGeometry(0.30, 0.30, 0.20, 14);
