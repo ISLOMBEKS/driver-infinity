@@ -53,14 +53,14 @@ export default function GamePage() {
 
   const { sendTransaction } = useSendTransaction({
     mutation: {
-      onSuccess: async () => {
-        // Транзакция прошла — теперь записываем чекин на сервере
+      onSuccess: async (txHash: `0x${string}`) => {
+        // Транзакция прошла — передаём хэш серверу для верификации
         setCheckinTxStatus('success');
         try {
           const r = await fetch('/api/checkin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fid: userFid, username }),
+            body: JSON.stringify({ fid: userFid, username, txHash }),
           });
           const d = await r.json();
           setCheckin(d);

@@ -50,7 +50,17 @@ export function upsertScore(fid: number, username: string, score: number): void 
 
 // ── Check-ins ─────────────────────────────────────────────────────────────────
 interface CheckinStore {
-  [fid: string]: { streak: number; lastCheckin: string };
+  [fid: string]: { streak: number; lastCheckin: string; txHash?: string };
+}
+
+// Set of all tx hashes already used (across all FIDs) — prevents replay attacks
+function usedTxHashes(): Set<string> {
+  const store = readJSON<CheckinStore>('checkins.json', {});
+  const hashes = new Set<string>();
+  for (const entry of Object.values(store)) {
+    if (entry.txHash) hashes.add(entry.txHash);
+  }
+  return hashes;
 }
 
 export function getCheckinData(fid: number) {
@@ -72,9 +82,17 @@ export function getCheckinData(fid: number) {
   };
 }
 
-export function recordCheckin(fid: number, username: string): {
+export function recordCheckin(fid: number, username: string, txHash?: string): {
   streak: number; lastCheckin: string; canCheckin: boolean; message: string;
 } {
+  // Reject if this tx hash was already used (replay attack)
+  if (txHash) {
+    const used = usedTxHashes();
+    if (used.has(txHash)) {
+      return { streak: 0, lastCheckin: '', canCheckin: false, message: 'Transaction already used.' };
+    }
+  }
+
   const store = readJSON<CheckinStore>('checkins.json', {});
   const key   = String(fid);
   const existing = store[key];
@@ -100,13 +118,13 @@ export function recordCheckin(fid: number, username: string): {
     })();
 
     const newStreak = isYesterday ? existing.streak + 1 : 1;
-    store[key] = { streak: newStreak, lastCheckin: todayISO };
+    store[key] = { streak: newStreak, lastCheckin: todayISO, ...(txHash ? { txHash } : {}) };
     writeJSON('checkins.json', store);
     const msg = newStreak > 1 ? `🔥 ${newStreak}-day streak! Keep it up!` : 'Welcome back! Streak started.';
     return { streak: newStreak, lastCheckin: todayISO, canCheckin: false, message: msg };
   }
 
-  store[key] = { streak: 1, lastCheckin: todayISO };
+  store[key] = { streak: 1, lastCheckin: todayISO, ...(txHash ? { txHash } : {}) };
   writeJSON('checkins.json', store);
   return { streak: 1, lastCheckin: todayISO, canCheckin: false, message: '✅ Day 1 — streak started!' };
 }
