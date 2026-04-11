@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import sdk from '@farcaster/miniapp-sdk';
-import { useAccount, useConnect, useWriteContract } from 'wagmi';
+import { useAccount, useConnect, useWriteContract, useSendTransaction } from 'wagmi';
 import { farcasterFrame } from '@farcaster/miniapp-wagmi-connector';
-import { parseUnits } from 'viem';
+import { parseUnits, parseEther } from 'viem';
 import { initGame, type GameController } from '@/lib/game';
 
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as const;
@@ -40,6 +40,7 @@ export default function GamePage() {
   const [checkin, setCheckin]   = useState<CheckinData | null>(null);
   const [checkinMsg, setCheckinMsg] = useState('');
   const [payStatus, setPayStatus] = useState<'idle'|'pending'|'success'|'error'>('idle');
+  const [checkinTxStatus, setCheckinTxStatus] = useState<'idle'|'pending'|'success'|'error'>('idle');
 
   const { address } = useAccount();
   const { connect } = useConnect();
@@ -47,6 +48,29 @@ export default function GamePage() {
     mutation: {
       onSuccess: () => { setPayStatus('success'); gameRef.current?.resume(); setScreen('playing'); },
       onError:   () => setPayStatus('error'),
+    },
+  });
+
+  const { sendTransaction } = useSendTransaction({
+    mutation: {
+      onSuccess: async () => {
+        // Транзакция прошла — теперь записываем чекин на сервере
+        setCheckinTxStatus('success');
+        try {
+          const r = await fetch('/api/checkin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fid: userFid, username }),
+          });
+          const d = await r.json();
+          setCheckin(d);
+          setCheckinMsg(d.message || '');
+        } catch {}
+      },
+      onError: () => {
+        setCheckinTxStatus('error');
+        setCheckinMsg('Transaction failed. Try again.');
+      },
     },
   });
 
@@ -125,13 +149,20 @@ export default function GamePage() {
     try { const r = await fetch(`/api/checkin?fid=${userFid}`); setCheckin(await r.json()); } catch {}
   }, [userFid]);
 
-  const handleCheckin = useCallback(async () => {
+  const handleCheckin = useCallback(() => {
     if (!userFid) return;
-    try {
-      const r = await fetch('/api/checkin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fid: userFid, username }) });
-      const d = await r.json(); setCheckin(d); setCheckinMsg(d.message || '');
-    } catch {}
-  }, [userFid, username]);
+    if (!address) { connect({ connector: farcasterFrame() }); return; }
+
+    const recipient = process.env.NEXT_PUBLIC_GAME_WALLET as `0x${string}`;
+    setCheckinTxStatus('pending');
+    setCheckinMsg('');
+
+    // Отправляем 0.000001 ETH (~$0.003) — создаём on-chain запись
+    sendTransaction({
+      to: recipient,
+      value: parseEther('0.000001'),
+    });
+  }, [userFid, address, connect, sendTransaction, username]);
 
   const showOverlay = screen !== 'playing';
 
@@ -481,15 +512,35 @@ export default function GamePage() {
                       )}
 
                       {checkin?.canCheckin ? (
-                        <button onClick={handleCheckin} style={{
-                          background:'linear-gradient(180deg,#00c853,#009624)',
-                          color:'#fff', border:'none', borderRadius:14,
-                          padding:'15px 18px', width:'100%', fontSize:16, fontWeight:700,
-                          cursor:'pointer', boxShadow:'0 8px 24px rgba(0,200,83,0.3)',
-                          fontFamily:'Inter,sans-serif',
-                        }}>
-                          ✅ Check in today!
-                        </button>
+                        <>
+                          <button
+                            onClick={handleCheckin}
+                            disabled={checkinTxStatus === 'pending'}
+                            style={{
+                              background: checkinTxStatus === 'pending'
+                                ? 'rgba(0,200,83,0.4)'
+                                : 'linear-gradient(180deg,#00c853,#009624)',
+                              color:'#fff', border:'none', borderRadius:14,
+                              padding:'15px 18px', width:'100%', fontSize:16, fontWeight:700,
+                              cursor: checkinTxStatus === 'pending' ? 'wait' : 'pointer',
+                              boxShadow:'0 8px 24px rgba(0,200,83,0.3)',
+                              fontFamily:'Inter,sans-serif',
+                            }}>
+                            {checkinTxStatus === 'pending'
+                              ? '⏳ Confirming on Base…'
+                              : '✅ Check in today!'}
+                          </button>
+                          {checkinTxStatus === 'idle' && (
+                            <div style={{ fontSize:11, opacity:.35, fontFamily:'Inter,sans-serif', textAlign:'center' }}>
+                              ~$0.003 gas · creates on-chain record
+                            </div>
+                          )}
+                          {checkinTxStatus === 'error' && (
+                            <div style={{ fontSize:13, color:'#ff8080', fontFamily:'Inter,sans-serif', textAlign:'center' }}>
+                              {checkinMsg}
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <div style={{
                           background:'rgba(255,255,255,0.05)', borderRadius:12,
